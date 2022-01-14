@@ -1,10 +1,11 @@
-import logo from './logo.svg';
-import './App.css';
-import Filters from './Filters';
+import './App.scss';
+import Filters from './components/Filters';
 function App() {
   return (
     <div className="App">
-      <Filters />
+      <div className='App-container'>
+        <Filters />
+      </div>
     </div>
   );
 }

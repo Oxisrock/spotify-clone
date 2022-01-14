@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Buffer } from 'buffer';
-import Select from 'react-select'
-import Slider from "react-slick";
+import Select, { components } from 'react-select'
+import Playlists from "./Playlists";
 
 const Filters = () => {
 
@@ -14,28 +14,21 @@ const Filters = () => {
     const [tracks, setTracks] = useState([]);
     const client_id = "f6792238befd4b018323651d304f70b3";
     const client_secret = "1439895652dd4f489d6e5f65b678531a";
+    const { SingleValue, Option } = components;
 
-    const handleChange = async (selectedOption) => {
-        setSelectedOption(selectedOption.value);
-        axios(`https://api.spotify.com/v1/browse/categories/${selectedOption.value}/playlists`, {
-            'method': 'GET',
-            'headers': {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Authorization': 'Bearer ' + token
-            }
-        }).then(response => {
+    const IconSingleValue = (props) => (
+        <SingleValue {...props} style={{ display: 'flex', alignItems: 'center' }}>
+            <img src={props.data.image} style={{ height: '30px', width: '30px', borderRadius: '50%', marginRight: '10px' }} />
+            {props.data.label}
+        </SingleValue>
+    );
 
-            const playlist = response.data.playlists.items.map(({ id, name }) => ({
-                value: id,
-                label: name,
-            }));
-            setPlayLists(playlist);
-
-
-        }).catch(error => console.log(error))
-    }
-
+    const IconOption = (props) => (
+        <Option {...props} style={{ display: 'flex', alignItems: 'center' }}>
+            <img src={props.data.image} style={{ height: '30px', width: '30px', borderRadius: '50%', marginRight: '10px' }} />
+            {props.data.label}
+        </Option>
+    );
     const handleChangeLoad = async (optionPlayList) => {
         setOptionPlayList(optionPlayList);
         axios(`https://api.spotify.com/v1/playlists/${optionPlayList.value}/`, {
@@ -48,7 +41,27 @@ const Filters = () => {
         }).then(response => {
 
             setTracks(response.data.tracks.items);
-            console.log(tracks);
+
+        }).catch(error => console.log(error))
+    }
+
+    const handleChange = async (selectedOption) => {
+        setSelectedOption(selectedOption.value);
+        axios(`https://api.spotify.com/v1/browse/categories/${selectedOption.value}/playlists`, {
+            'method': 'GET',
+            'headers': {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + token
+            }
+        }).then(response => {
+
+            const playlist = response.data.playlists.items.map(({ id, name, images }) => ({
+                value: id,
+                label: name,
+                image: images[0].url
+            }));
+            setPlayLists(playlist);
 
         }).catch(error => console.log(error))
     }
@@ -62,7 +75,6 @@ const Filters = () => {
             },
             data: 'grant_type=client_credentials'
         }).then(tokenresponse => {
-            console.log(tokenresponse.data.access_token);
             setToken(tokenresponse.data.access_token);
 
             // Api call for retrieving Genres data
@@ -74,41 +86,47 @@ const Filters = () => {
                     'Authorization': 'Bearer ' + tokenresponse.data.access_token
                 }
             }).then(response => {
-                const categories = response.data.categories.items.map(({ id, name }) => ({
+                const categories = response.data.categories.items.map(({ id, name, icons }) => ({
                     value: id,
                     label: name,
+                    image: icons[0].url
                 }));
                 setGenres(categories);
-
             }).catch(error => console.log(error))
 
 
         }).catch(error => console.log(error));
     }, []);
-    const settings = {
-        dots: true,
-        speed: 500,
-        fade: true,
-        slidesToShow: 1,
-        slidesToScroll: 1,
-        center: '0',
-      };
-  
+    const styles = {
+        control: base => ({
+            ...base,
+            "&:hover": {
+                borderColor: "blue"
+            }
+        }),
+        singleValue: base => ({
+            ...base,
+            display: "flex",
+            alignItems: "center",
+        }),
+        option: styles => ({
+            ...styles,
+            display: "flex",
+            alignItems: "center",
+            textAling: "left"
+        }),
+
+
+    };
     return (
         <div className='container'>
-            <Select options={genres} onChange={handleChange} />
-
-            <Select options={playLists} value={optionPlayList} onChange={handleChangeLoad} />
-            <Slider {...settings}>
-                {tracks.map((track) => (
-                    <div key={track.track.id}>
-                        <a href={track.track.external_urls.spotify} target='_blank' className=''>
-                            <img src={track.track.album.images[0].url} alt='' />
-                        </a>
-                    </div>
-                ))
-                }
-            </Slider>
+            <div className='selects'>
+                <Select styles={styles} components={{ SingleValue: IconSingleValue, Option: IconOption }} options={genres} onChange={handleChange} />
+                <Select styles={styles} components={{ SingleValue: IconSingleValue, Option: IconOption }} value={optionPlayList} options={playLists} onChange={handleChangeLoad} />
+            </div>
+            <div className='playlists'>
+                <Playlists tracks={tracks} />
+            </div>
         </div>
     );
 }
